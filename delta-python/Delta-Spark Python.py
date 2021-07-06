@@ -1,10 +1,23 @@
 # Databricks notebook source
-# MAGIC %sql
-# MAGIC create database if not exists amineben_delta;
-# MAGIC use amineben_delta;
+# MAGIC %md
+# MAGIC ## To run this notebook, you need DBR 8.3+ 
 
 # COMMAND ----------
 
+# DBTITLE 1,Reference Lib
+# MAGIC %md
+# MAGIC **delta-spark** is fully documented here : https://pypi.org/project/delta-spark/
+# MAGIC No installation needed
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC create database if not exists deltademo;
+# MAGIC use deltademo;
+
+# COMMAND ----------
+
+# DBTITLE 1,Create table using delta-spark python library
 from delta import *
 from pyspark.sql.types import *
 import pyspark.sql.functions as F
@@ -34,7 +47,7 @@ transactionsTable = DeltaTable.createIfNotExists(spark) \
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC DESC EXTENDED amineben_delta.transactions;
+# MAGIC DESC EXTENDED deltademo.transactions;
 
 # COMMAND ----------
 
