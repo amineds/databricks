@@ -56,7 +56,7 @@ transactionsTable = DeltaTable.createIfNotExists(spark) \
 # DBTITLE 1,Retrieve Data from source
 # MAGIC %sh
 # MAGIC filename="/dbfs/tmp/transactions_v3.csv"
-# MAGIC src="https://raw.githubusercontent.com/amineds/databricks/main/delta-python/transactions_v3.csv"
+# MAGIC src="https:https://raw.githubusercontent.com/amineds/datafiles/main/transactions_v3.csv"
 # MAGIC 
 # MAGIC wget -O "$filename" "$src"
 
