@@ -22,11 +22,13 @@ from delta import *
 from pyspark.sql.types import *
 import pyspark.sql.functions as F
 
+transactions_table_path = "<path-to-store-delta-table-data>"
+
 # Create table in the metastore
 transactionsTable = DeltaTable.createIfNotExists(spark) \
     .tableName("transactions") \
     .comment('Fed daily with csv files uploaded from source systems') \
-    .location("/mnt/kkbox/transactions/delta") \
+    .location(transactions_table_path) \
     .addColumn('msno', StringType()) \
     .addColumn('payment_method_id', IntegerType()) \
     .addColumn('payment_plan_days', IntegerType()) \
@@ -51,6 +53,22 @@ transactionsTable = DeltaTable.createIfNotExists(spark) \
 
 # COMMAND ----------
 
+# DBTITLE 1,Retrieve Data from source
+# MAGIC %sh
+# MAGIC filename="/dbfs/tmp/transactions_v3.csv"
+# MAGIC src="https://raw.githubusercontent.com/amineds/databricks/main/delta-python/transactions_v3.csv"
+# MAGIC 
+# MAGIC wget -O "$filename" "$src"
+
+# COMMAND ----------
+
+# DBTITLE 1,Check file existence
+data = "/tmp/transactions_v3.csv"
+dbutils.fs.ls(data)
+
+# COMMAND ----------
+
+# DBTITLE 1,Read raw data in csv format
 from pyspark.sql.types import *
 # transaction dataset schema
 transaction_schema = StructType([
@@ -65,67 +83,80 @@ transaction_schema = StructType([
     StructField('is_cancel', IntegerType())  
   ])
 
+url = "https://raw.githubusercontent.com/amineds/databricks/main/delta-python/transactions_v3.csv"
+from pyspark import SparkFiles
+spark.sparkContext.addFile(url)
+
 # read data from csv
-transactions = spark.read.csv('/mnt/kkbox/transactions/transactions_v2.csv',schema=transaction_schema,header=True,dateFormat='yyyyMMdd')
+transactions = spark.read.csv("/tmp/transactions_v3.csv",schema=transaction_schema,header=False,dateFormat='yyyyMMdd')
 
 # COMMAND ----------
 
-# persist in delta lake format
-transactions.write.partitionBy('transaction_date').mode('overwrite').saveAsTable('amineben_delta.transactions')
+# DBTITLE 1,Persist in delta lake format
+transactions.write.partitionBy('transaction_date').mode('overwrite').saveAsTable('deltademo.transactions')
 
 # COMMAND ----------
 
-import shutil
-_ = spark.sql('drop table amineben_delta.transactions')
-shutil.rmtree('/mnt/kkbox/transactions/delta', ignore_errors=True)
+# DBTITLE 1,Get a reference to Delta table using delta-spark library
+myTransactionsTable = DeltaTable.forName(spark,"deltademo.transactions")
 
 # COMMAND ----------
 
-transactionsTable = DeltaTable.forname("amineben_delta.transactions")
-
-# COMMAND ----------
-
-# DBTITLE 1,This option is set to avoid errors while deleting recent files from Delta table
+# DBTITLE 1,Delete Data
+#option is set to avoid errors while deleting recent files from Delta table
 spark.conf.set("spark.databricks.delta.retentionDurationCheck.enabled","false")
 
 # COMMAND ----------
 
-transactionsTable.delete("transaction_date='2015-01-01'")
+myTransactionsTable.delete("transaction_date='2015-01-01'")
+
+# COMMAND ----------
+
+# DBTITLE 1,Check row count
+# MAGIC %sql
+# MAGIC select count(*) 
+# MAGIC from deltademo.transactions
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select count(*) from amineben_delta.transactions
+# MAGIC select count(*) 
+# MAGIC from deltademo.transactions 
+# MAGIC VERSION AS OF 1
 
 # COMMAND ----------
 
-transactionsTable.restoreToVersion(1)
+# DBTITLE 1,Restore table and query history
+myTransactionsTable.restoreToVersion(1)
 
 # COMMAND ----------
 
-display(transactionsTable.history())
+display(myTransactionsTable.history())
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC select * from amineben_delta.transactions
-# MAGIC where transaction_date = '2015-01-01'
+#check data recovery
+%sql
+select * from deltademo.transactions
+where transaction_date = '2015-01-01'
 
 # COMMAND ----------
 
-transactionsTable.update(
+# DBTITLE 1,Update data
+myTransactionsTable.update(
     condition = "transaction_date = '2015-01-01'",
     set = { "payment_method_id": "99" } )
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from amineben_delta.transactions
+# MAGIC select * from deltademo.transactions
 # MAGIC where transaction_date = '2015-01-01'
 
 # COMMAND ----------
 
-transactionsDF = transactionsTable.toDF()
+# DBTITLE 1,Use Spark Dataframe to explore data
+transactionsDF = myTransactionsTable.toDF()
 
 # COMMAND ----------
 
