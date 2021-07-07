@@ -23,7 +23,7 @@ fs = AzureBlobFileSystem(
         credential='<access-key>'
     )
 
-df_full = DeltaTable('<path-to-data>', file_system=fs).to_pandas()
+df_full = DeltaTable("<path-to-data>", file_system=fs).to_pandas()
 
 # COMMAND ----------
 
@@ -35,7 +35,7 @@ import pyarrow.dataset as ds
 
 #Predicate pushdown. 
 #If the table is partitioned on age, it will also to partition pruning
-df_filtered = DeltaTable("kkbox/transactions/delta", file_system=fs) \
+df_filtered = DeltaTable("<path-to-data>", file_system=fs) \
               .to_table(columns=["payment_method_id","payment_plan_days"],filter=ds.field("transaction_date")=="2015-01-01") \
               .to_pandas()
 
