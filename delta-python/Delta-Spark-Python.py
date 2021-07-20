@@ -83,7 +83,7 @@ transaction_schema = StructType([
     StructField('is_cancel', IntegerType())  
   ])
 
-url = "https://raw.githubusercontent.com/amineds/databricks/main/delta-python/transactions_v3.csv"
+url = "https://raw.githubusercontent.com/amineds/datafiles/main/transactions_v3.csv"
 from pyspark import SparkFiles
 spark.sparkContext.addFile(url)
 
